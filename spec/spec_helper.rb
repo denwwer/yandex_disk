@@ -14,8 +14,8 @@ RSpec.configure do |config|
 end
 
 # login and password for yandex disk
-LOGIN = 'boxic2014'
-PWD   = 'YanB0r1sM4r'
+LOGIN = ''
+PWD   = ''
 
 # test settings
 FILES_PATH    = File.dirname(__FILE__) + '/files'
