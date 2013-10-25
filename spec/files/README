@@ -1,0 +1,6 @@
+Files was deleted for decrease gem size.
+Required files for test:
+ sample.txt*
+ sample.jpg
+
+*will be created automatically when run test
