@@ -4,6 +4,7 @@ require 'zlib'
 require 'base64'
 require 'rexml/document'
 
+require 'yandex_disk/cfg'
 require 'yandex_disk/ext'
 require 'yandex_disk/chunked'
 
@@ -209,7 +210,7 @@ module YandexDisk
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
       # debug
-      http.set_debug_output($stderr) if DEBUG
+      http.set_debug_output($stderr) if YandexDisk::DEBUG
       # method
       req = nil
       case method
