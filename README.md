@@ -127,7 +127,7 @@ return public url if successful else raise RequestError
 
   **example:**
 
-    yd.set_public('/home/graph.pdf') # => http://yadi.sk/d/FTb3fL0049Xt0
+    yd.set_public('/home/graph.pdf') # => http://yadi.sk/d/#############
 #### Set private file or directory
 
     yd.set_private(path)

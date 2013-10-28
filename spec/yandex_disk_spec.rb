@@ -135,14 +135,14 @@ describe YandexDisk do
 
       it 'should be public'do
         @yd.upload(@image_file, 'my', {:force => true})
-        # example: http://yadi.sk/d/FTb3fLiI49Xt0
+        # mask: http://yadi.sk/d/#############
         expect(@yd.set_public('my/' + File.basename(@image_file)) =~ /http:\/\/yadi\.sk\/d\/.+/).to be_true
       end
 
       it 'should be private'do
         @yd.upload(@text_file, 'my', {:force => true})
         f_name = 'my/' + File.basename(@text_file)
-        # example: http://yadi.sk/d/FTb3fLiI49Xt0
+        # mask: http://yadi.sk/d/#############
         expect(@yd.set_public(f_name) =~ /http:\/\/yadi\.sk\/d\/.+/).to be_true
         expect(@yd.set_private(f_name)).to be_true
       end

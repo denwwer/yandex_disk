@@ -17,9 +17,17 @@ module YandexDisk
       @token = 'Basic ' + Base64.encode64("#{login}:#{pwd}")
     end
 
-    # TODO gzip file when send
-    # fist argument is file name, second is hash with options:
-    # chunk_size - file chunk size, default is 100
+    # TODO gzip file when sending
+    # Example:
+    #   yd.upload('/home/graph.pdf', 'my/work')
+    #   => true
+    #
+    # Arguments:
+    #   file: (String) path to file
+    #   path: (String) path to yandex disk directory (default is <b>root</b>)
+    #   options:
+    #      chunk_size: (Integer) file chunk size (default is 100)
+    #      force: (Boolean) create path structure if not exist (raise <b>RequestError</b> if <b>path</b> not exist for default)
     def upload(file, path = '', options = {})
       # valid file?
       raise RequestError, "File not found." if file.nil? || !File.file?(file)
@@ -37,8 +45,13 @@ module YandexDisk
       return true
     end
 
-    # download file to local disc
-    # arguments: file name, destination path
+    # Example:
+    #   yd.download('/home/graph.pdf', '/home')
+    #   => true
+    #
+    # Arguments:
+    #   file: (String) path to yandex disk file
+    #   save_path: (String) path to save
     def download(file, save_path)
       option = {:path => file,
                 :headers => {'TE' => 'chunked',
@@ -60,10 +73,12 @@ module YandexDisk
       return true
     end
 
-    # Create directory or force create directory path
+    # Example:
+    #   yd.create_path('/home/my/photos')
+    #   => true
     #
-    # yd.create_dir(['test'])
-    # yd.create_dir(['photos', 'my vacation'])
+    # Arguments:
+    #   path: (String) path to yandex disk directory hierarchy
     def create_path(path)
       c_path = ''
       path.split('/').each do |p|
@@ -74,6 +89,9 @@ module YandexDisk
     end
     alias_method :mkdir, :create_path
 
+    # Example:
+    #   yd.size
+    #   => {:available => 312312, :used => 3123}
     def size
       body = '<?xml version="1.0" encoding="utf-8"?><D:propfind xmlns:D="DAV:"><D:prop><D:quota-available-bytes/><D:quota-used-bytes/></D:prop></D:propfind>'
       send_propfind(0, {:body => body})
@@ -84,6 +102,12 @@ module YandexDisk
              :used => xml.elements[prop + 'd:quota-used-bytes'].text.to_i}
     end
 
+    # Example:
+    #   yd.exist?('/home/graph.pdf')
+    #   => true
+    #
+    # Arguments:
+    #   path: (String) path to yandex disk directory or file
     def exist?(path)
       body = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><displayname/></prop></propfind>'
       send_propfind(0, {:path => path, :body => body})
@@ -92,6 +116,18 @@ module YandexDisk
       return false
     end
 
+    # Example:
+    #   yd.properties('/home/graph.pdf')
+    #   => {:name => 'graph.pdf',
+    #       :created => (Time),
+    #       :updated => (Time),
+    #       :type => 'pdf',
+    #       :size => 42432,
+    #       :is_file => true,
+    #       :public_url => nil}
+    #
+    # Arguments:
+    #   path: (String) path to yandex disk directory or file
     def properties(path)
       body = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><displayname/><creationdate/><getlastmodified/><getcontenttype/><getcontentlength/><public_url xmlns="urn:yandex:disk:meta"/></prop></propfind>'
       send_propfind(0, {:path => path, :body => body})
@@ -109,6 +145,18 @@ module YandexDisk
               :public_url => xml.elements[prop + 'public_url'].text}
     end
 
+    # Example:
+    #   yd.files('/home')
+    #   => [{:name => 'graph.pdf',
+    #       :created => (Time),
+    #       :updated => (Time),
+    #       :type => 'pdf',
+    #       :size => 42432,
+    #       :is_file => true}]
+    #
+    # Arguments:
+    #   path: (String) path to yandex disk directory (default is <b>root</b>)
+    #   with_root: (Boolean) include information of root directory or not (<b>false</b> for default)
     def files(path = '', with_root = true)
       send_propfind(1, {:path => path})
       xml = REXML::Document.new(@response.body)
@@ -129,21 +177,47 @@ module YandexDisk
       return files
     end
 
+    # Example:
+    #   yd.copy('/home/graph.pdf', 'my/work')
+    #   => true
+    #
+    # Arguments:
+    #   from: (String) path to yandex disk directory or file
+    #   to: (String) path to yandex disk directory
     def copy(from, to)
       move_copy(:copy, from, to)
     end
     alias_method :cp, :copy
 
+    # Example:
+    #   yd.move('/home/graph.pdf', 'my/work')
+    #   => true
+    #
+    # Arguments:
+    #   from: (String) path to yandex disk directory or file
+    #   to: (String) path to yandex disk directory
     def move(from, to)
       move_copy(:move, from, to)
     end
     alias_method :mv, :move
 
+    # Example:
+    #   yd.delete('/home/graph.pdf')
+    #   => true
+    #
+    # Arguments:
+    #   path: (String) path to yandex disk directory or file
     def delete(path)
       send_request(:delete, {:path => path})
     end
     alias_method :del, :delete
 
+    # Example:
+    #   yd.set_public('/home/graph.pdf')
+    #   => http://yadi.sk/d/#############
+    #
+    # Arguments:
+    #   path: (String) path to yandex disk directory or file
     def set_public(path)
       body = '<propertyupdate xmlns="DAV:"><set><prop><public_url xmlns="urn:yandex:disk:meta">true</public_url></prop></set></propertyupdate>'
       send_request(:proppatch, {:path => path, :body => body})
@@ -151,6 +225,12 @@ module YandexDisk
       return xml.elements['d:multistatus/d:response/d:propstat/d:prop/public_url'].text
     end
 
+    # Example:
+    #   yd.set_private('/home/graph.pdf')
+    #   => true
+    #
+    # Arguments:
+    #   path: (String) path to yandex disk directory or file
     def set_private(path)
       body = '<propertyupdate xmlns="DAV:"><remove><prop><public_url xmlns="urn:yandex:disk:meta" /></prop></remove></propertyupdate>'
       send_request(:proppatch, {:path => path, :body => body})
@@ -158,7 +238,14 @@ module YandexDisk
       return xml.elements['d:multistatus/d:response/d:propstat/d:prop/public_url'].text.nil?
     end
 
-    # preview
+    # Example:
+    #   yd.preview('/home/cat.jpg', 'm', '/home/photo')
+    #   => true
+    #
+    # Arguments:
+    #   path: (String) path to yandex disk file
+    #   size: (String) preview size, detail {here}[http://api.yandex.com/disk/doc/dg/reference/preview.xml]
+    #   save_to: (String) path to save
     def preview(path, size, save_to)
       send_request(:get, {:path => path, :preview => size})
       File.open(File.join(save_to, path.split('/').last), 'w'){|f| f.write(@response.body)}
