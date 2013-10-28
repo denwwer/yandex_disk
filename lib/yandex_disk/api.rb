@@ -23,11 +23,11 @@ module YandexDisk
     #   => true
     #
     # Arguments:
-    #   file: (String) path to file
-    #   path: (String) path to yandex disk directory (default is <b>root</b>)
+    #   file: path to file
+    #   path: path to yandex disk directory (default is <b>root</b>)
     #   options:
-    #      chunk_size: (Integer) file chunk size (default is 100)
-    #      force: (Boolean) create path structure if not exist (raise <b>RequestError</b> if <b>path</b> not exist for default)
+    #      chunk_size: file chunk size (default is 100)
+    #      force: create path structure if not exist (raise <b>RequestError</b> if <b>path</b> not exist for default)
     def upload(file, path = '', options = {})
       # valid file?
       raise RequestError, "File not found." if file.nil? || !File.file?(file)
@@ -50,8 +50,8 @@ module YandexDisk
     #   => true
     #
     # Arguments:
-    #   file: (String) path to yandex disk file
-    #   save_path: (String) path to save
+    #   file: path to yandex disk file
+    #   save_path: path to save
     def download(file, save_path)
       option = {:path => file,
                 :headers => {'TE' => 'chunked',
@@ -78,7 +78,7 @@ module YandexDisk
     #   => true
     #
     # Arguments:
-    #   path: (String) path to yandex disk directory hierarchy
+    #   path: path to yandex disk directory hierarchy
     def create_path(path)
       c_path = ''
       path.split('/').each do |p|
@@ -107,7 +107,7 @@ module YandexDisk
     #   => true
     #
     # Arguments:
-    #   path: (String) path to yandex disk directory or file
+    #   path: path to yandex disk directory or file
     def exist?(path)
       body = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><displayname/></prop></propfind>'
       send_propfind(0, {:path => path, :body => body})
@@ -118,7 +118,8 @@ module YandexDisk
 
     # Example:
     #   yd.properties('/home/graph.pdf')
-    #   => {:name => 'graph.pdf',
+    #   =>
+    #       {:name => 'graph.pdf',
     #       :created => (Time),
     #       :updated => (Time),
     #       :type => 'pdf',
@@ -127,7 +128,7 @@ module YandexDisk
     #       :public_url => nil}
     #
     # Arguments:
-    #   path: (String) path to yandex disk directory or file
+    #   path: path to yandex disk directory or file
     def properties(path)
       body = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><displayname/><creationdate/><getlastmodified/><getcontenttype/><getcontentlength/><public_url xmlns="urn:yandex:disk:meta"/></prop></propfind>'
       send_propfind(0, {:path => path, :body => body})
@@ -147,7 +148,8 @@ module YandexDisk
 
     # Example:
     #   yd.files('/home')
-    #   => [{:name => 'graph.pdf',
+    #   =>
+    #       [{:name => 'graph.pdf',
     #       :created => (Time),
     #       :updated => (Time),
     #       :type => 'pdf',
@@ -155,8 +157,8 @@ module YandexDisk
     #       :is_file => true}]
     #
     # Arguments:
-    #   path: (String) path to yandex disk directory (default is <b>root</b>)
-    #   with_root: (Boolean) include information of root directory or not (<b>false</b> for default)
+    #   path: path to yandex disk directory (default is <b>root</b>)
+    #   with_root: include information of root directory or not (<b>false</b> for default)
     def files(path = '', with_root = true)
       send_propfind(1, {:path => path})
       xml = REXML::Document.new(@response.body)
@@ -182,8 +184,8 @@ module YandexDisk
     #   => true
     #
     # Arguments:
-    #   from: (String) path to yandex disk directory or file
-    #   to: (String) path to yandex disk directory
+    #   from: path to yandex disk directory or file
+    #   to: path to yandex disk directory
     def copy(from, to)
       move_copy(:copy, from, to)
     end
@@ -194,8 +196,8 @@ module YandexDisk
     #   => true
     #
     # Arguments:
-    #   from: (String) path to yandex disk directory or file
-    #   to: (String) path to yandex disk directory
+    #   from: path to yandex disk directory or file
+    #   to: path to yandex disk directory
     def move(from, to)
       move_copy(:move, from, to)
     end
@@ -206,7 +208,7 @@ module YandexDisk
     #   => true
     #
     # Arguments:
-    #   path: (String) path to yandex disk directory or file
+    #   path: path to yandex disk directory or file
     def delete(path)
       send_request(:delete, {:path => path})
     end
@@ -217,7 +219,7 @@ module YandexDisk
     #   => http://yadi.sk/d/#############
     #
     # Arguments:
-    #   path: (String) path to yandex disk directory or file
+    #   path: path to yandex disk directory or file
     def set_public(path)
       body = '<propertyupdate xmlns="DAV:"><set><prop><public_url xmlns="urn:yandex:disk:meta">true</public_url></prop></set></propertyupdate>'
       send_request(:proppatch, {:path => path, :body => body})
@@ -230,7 +232,7 @@ module YandexDisk
     #   => true
     #
     # Arguments:
-    #   path: (String) path to yandex disk directory or file
+    #   path: path to yandex disk directory or file
     def set_private(path)
       body = '<propertyupdate xmlns="DAV:"><remove><prop><public_url xmlns="urn:yandex:disk:meta" /></prop></remove></propertyupdate>'
       send_request(:proppatch, {:path => path, :body => body})
@@ -239,15 +241,15 @@ module YandexDisk
     end
 
     # Example:
-    #   yd.preview('/home/cat.jpg', 'm', '/home/photo')
+    #   yd.preview('/home/cat.jpg', 128, '/home/photo')
     #   => true
     #
     # Arguments:
-    #   path: (String) path to yandex disk file
-    #   size: (String) preview size, detail {here}[http://api.yandex.com/disk/doc/dg/reference/preview.xml]
-    #   save_to: (String) path to save
+    #   path: path to yandex disk file
+    #   size: preview size (for details visit http://api.yandex.com/disk/doc/dg/reference/preview.xml)
+    #   save_to: path to save
     def preview(path, size, save_to)
-      send_request(:get, {:path => path, :preview => size})
+      send_request(:get, {:path => path, :preview => size.to_s})
       File.open(File.join(save_to, path.split('/').last), 'w'){|f| f.write(@response.body)}
     end
 
