@@ -1,7 +1,5 @@
 #encoding: UTF-8
 require 'spec_helper'
-require 'net/http'
-require 'uri'
 require 'fastimage'
 
 describe YandexDisk do

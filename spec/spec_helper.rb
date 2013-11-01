@@ -2,7 +2,6 @@
 require 'simplecov'
 SimpleCov.start
 require 'rubygems'
-require 'bundler/setup'
 require 'yandex_disk'
 require 'fileutils'
 
