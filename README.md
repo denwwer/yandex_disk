@@ -82,6 +82,7 @@ return Hash `{:name, :created, :updated, :type, :size, :is_file, :public_url}` i
 
     prop = yd.properties('/home/graph.pdf', {:h_size => true})
     p prop[:is_file] # => true
+    p prop[:size] # => 25 MB
 #### Return list of files properties in directory
 
     yd.files(path, options)
