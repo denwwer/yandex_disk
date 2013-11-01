@@ -27,9 +27,18 @@ describe YandexDisk do
       @yd = YandexDisk.login(LOGIN, PWD)
     end
 
-    it 'should return available and used space' do
-      size = @yd.size
-      expect(size[:used] > 0 && size[:available] > 0).to be_true
+    describe 'size' do
+      it 'should be in bytes' do
+        size = @yd.size
+        expect(size[:used] > 0 && size[:available] > 0).to be_true
+      end
+
+      it 'should be in readable format' do
+        size = @yd.size(:h_size => true)
+        mask = /Byte|KB|MB|GB/
+        expect(size[:used].match(mask)[0].empty? &&
+               size[:available].match(mask)[0].empty?).to be_false
+      end
     end
 
     it 'should return list of files' do
@@ -76,7 +85,7 @@ describe YandexDisk do
         # copy directory
         @yd.copy(src, des)
         # check files
-        @yd.files(src, false).size.should eq 2
+        @yd.files(src).size.should eq 2
         files.each do |file, text|
           download_and_validate(File.join(des, file), text)
         end
@@ -94,31 +103,31 @@ describe YandexDisk do
         @yd.upload(@text_file, 'my', {:force => true}).should be_true
       end
 
-      it 'should be downloaded and valid' do
+      it 'should be downloaded and validate' do
         @yd.upload(@text_file, 'my', {:force => true}).should be_true
         path = 'my/' + File.basename(@text_file)
         download_and_validate(path)
       end
       # its related to copy dir
-      it 'should by copied to new directory' do
+      it 'should by copied' do
         @yd.upload(@text_file, 'my', {:force => true})
         f_name = File.basename(@text_file)
         file = 'my/' + f_name
         new_path = 'my/text'
-        @yd.create_path(new_path)
-        @yd.copy(file, new_path)
+        @yd.create_path(new_path).should be_true
+        @yd.copy(file, new_path).should be_true
         # file still exist in src path
         @yd.exist?(file).should be_true
         download_and_validate(File.join(new_path, f_name))
       end
 
-      it 'should by moved to new directory' do
+      it 'should by moved' do
         @yd.upload(@text_file, 'my', {:force => true})
         f_name = File.basename(@text_file)
         file = 'my/' + f_name
         new_path = 'my/text'
         @yd.create_path(new_path)
-        @yd.move(file, new_path)
+        @yd.move(file, new_path).should be_true
         # file not exist in src path
         @yd.exist?(file).should be_false
         download_and_validate(File.join(new_path, f_name))
@@ -129,7 +138,7 @@ describe YandexDisk do
         @yd.upload(@text_file)
         f_name = File.basename(@text_file)
         download_and_validate(f_name)
-        @yd.delete(f_name)
+        @yd.delete(f_name).should be_true
         @yd.exist?(f_name).should be_false
       end
 
@@ -154,13 +163,18 @@ describe YandexDisk do
         end
 
         it 'should return image in M size'do
-          @yd.preview('my/' + @f_name, 'm', DOWNLOAD_PATH)
+          @yd.preview('my/' + @f_name, 'm', DOWNLOAD_PATH).should be_true
           File.file?( File.join(DOWNLOAD_PATH, @f_name) ).should be_true
         end
 
         it 'should return image in 300x250 size'do
-          @yd.preview('my/' + @f_name, '300x250', DOWNLOAD_PATH)
+          @yd.preview('my/' + @f_name, '300x250', DOWNLOAD_PATH).should be_true
           FastImage.size( File.join(DOWNLOAD_PATH, @f_name) ).should eq [300, 250]
+        end
+
+        it 'should return image in 128 pixels wide'do
+          @yd.preview('my/' + @f_name, 128, DOWNLOAD_PATH).should be_true
+          FastImage.size( File.join(DOWNLOAD_PATH, @f_name) )[0].should eq 128
         end
       end
 

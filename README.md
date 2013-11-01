@@ -1,11 +1,11 @@
 ## Yandex Disk gem
-An easy-to-use client library for Yandex Disk API.
+An easy-to-use client library for Yandex Disk API based on Net::HTTP.
 Has any issue or suggestion please write about it [here](https://github.com/denwwer/yandex_disk/issues).
 ## Usage
 Include to project and login
 
     require 'yandex_disk'
-    yd = YandexDisk.login(login, pwd)`
+    yd = YandexDisk.login(login, pwd)
 #### Upload file
 
     yd.upload(file, path, options)
@@ -13,14 +13,14 @@ return true if success else raise RequestError
 
 **options:**
 
-`:chunk_size` file chunk size, default is 100
+`:chunk_size` file chunk size, default is 1024
 
 `:force` create path if not exist, default raise error
 
 **example:**
 
     yd.upload('/home/graph.pdf', 'my/work', {:force => true, :chunk_size => 500})
-    # will create "my/work" directory and upload file to "/my/work/graph.pdf" using chunk size 500 per request
+    # will create "my/work" directory and upload file to "/my/work/graph.pdf" using chunk size 1024 per request
 
 #### Download file
 
@@ -44,14 +44,21 @@ return true if success else raise RequestError
     yd.mkdir('/my/work') # create "/my/work" path
 #### Get available and used space
 
-    yd.size
+    yd.size(options)
+
+  **options:**
+
+  `:h_size` return size in human readable format (for default return in bytes) 15 Byte, 100 KB, etc
 
 return Hash `{:available, :used }` if success else raise RequestError
 
   **example:**
 
     s = yd.size
-    p s[:available], s[:used]
+    p s[:available], s[:used] # => 213133, 321
+    ####
+    s = yd.size(:h_size => true)
+    p s[:available], s[:used] # => '7.8 GB', '200 MB'
 #### File exist?
 
     yd.exist?(file)
@@ -63,29 +70,39 @@ return true if file exist else false
     p yd.exist?('/home/graph.pdf') # => true
 #### Get file properties
 
-    yd.properties(file)
+    yd.properties(file, options)
 
 return Hash `{:name, :created, :updated, :type, :size, :is_file, :public_url}` if success else raise RequestError
 
+ **options:**
+
+   `:h_size` return size in human readable format (for default return in bytes) 15 Byte, 100 KB, etc
+
   **example:**
 
-    prop = yd.properties('/home/graph.pdf')
+    prop = yd.properties('/home/graph.pdf', {:h_size => true})
     p prop[:is_file] # => true
 #### Return list of files properties in directory
 
-    yd.files(path)
+    yd.files(path, options)
 
   return Array with Hash `[{:name, :created, :updated, :type, :size, :is_file}]` if success else raise RequestError
 
+ **options:**
+
+   `:h_size` return size in human readable format (for default return in bytes) 15 Byte, 100 KB, etc
+
+   `:root` include properties for root directory ("home" in example)
+
+  **alias:** `ls`
+
   **example:**
 
-    files = yd.properties('/home')
-    p files[0][:name] # => home
-
-   for default response include properties for root directory ("home" in example). If you not need this dir properties, just set second argument to false
-
-    files = yd.properties('/home', false)
+    files = yd.files('/home')
     p files[0][:name] # => graph.pdf
+    ### with root
+    files = yd.properties('/home', {:root => true})
+    p files[0][:name] # => home
 #### Copy file or directory
 
     yd.copy(from, to)
@@ -169,3 +186,4 @@ save image if successful else raise RequestError
   **example:**
 
     yd.preview('/photo/car.jpg', 'm', '/home') # save "car.jpg" with 300 pixels wide to home directory
+    yd.preview('/photo/car.jpg', 128, '/home') # save preview 128 pixels wide to home directory

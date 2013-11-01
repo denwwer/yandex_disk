@@ -13,9 +13,11 @@ module YandexDisk
         @file.read(@size)
       end
     end
+
     def eof!
       @file.eof!
     end
+
     def eof?
       @file.eof?
     end

@@ -17,7 +17,6 @@ module YandexDisk
       @token = 'Basic ' + Base64.encode64("#{login}:#{pwd}")
     end
 
-    # TODO gzip file when sending
     # Example:
     #   yd.upload('/home/graph.pdf', 'my/work')
     #   => true
@@ -33,10 +32,9 @@ module YandexDisk
       raise RequestError, "File not found." if file.nil? || !File.file?(file)
       # create path
       create_path(path) if options[:force]
-      options[:chunk_size] ||= 100
+      options[:chunk_size] ||= 1024
       @file = File.open(file)
       options[:headers] = {'Expect' => '100-continue',
-                           #'Content-Encoding' => 'gzip',
                            'Transfer-Encoding' => 'chunked',
                            'content-type' => 'application/binary'}
 
@@ -62,8 +60,8 @@ module YandexDisk
       data = nil
       # unzip if zipped
       if @response.header['Content-Encoding'] == 'gzip'
-        sio = StringIO.new( @response.body )
-        gz = Zlib::GzipReader.new( sio )
+        s_io = StringIO.new(@response.body)
+        gz = Zlib::GzipReader.new(s_io)
         data = gz.read
       else
         data = @response.body
@@ -92,14 +90,19 @@ module YandexDisk
     # Example:
     #   yd.size
     #   => {:available => 312312, :used => 3123}
-    def size
+    # Arguments:
+    #   options:
+    #      readable: return size in human readable format e.g, 100K 128M 1G (false for default)
+    def size(options = {})
       body = '<?xml version="1.0" encoding="utf-8"?><D:propfind xmlns:D="DAV:"><D:prop><D:quota-available-bytes/><D:quota-used-bytes/></D:prop></D:propfind>'
       send_propfind(0, {:body => body})
       xml = REXML::Document.new(@response.body)
       prop = 'd:multistatus/d:response/d:propstat/d:prop/'
+      available_b = xml.elements[prop + 'd:quota-available-bytes'].text.to_i
+      used_b = xml.elements[prop + 'd:quota-used-bytes'].text.to_i
 
-      return {:available => xml.elements[prop + 'd:quota-available-bytes'].text.to_i,
-             :used => xml.elements[prop + 'd:quota-used-bytes'].text.to_i}
+      return {:available => available_b.to_readable(options[:h_size]),
+             :used => used_b.to_readable(options[:h_size])}
     end
 
     # Example:
@@ -129,7 +132,8 @@ module YandexDisk
     #
     # Arguments:
     #   path: path to yandex disk directory or file
-    def properties(path)
+    #   h_size: return size in human readable format e.g, 100K 128M 1G (false for default)
+    def properties(path, options = {})
       body = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><displayname/><creationdate/><getlastmodified/><getcontenttype/><getcontentlength/><public_url xmlns="urn:yandex:disk:meta"/></prop></propfind>'
       send_propfind(0, {:path => path, :body => body})
       prop = 'd:multistatus/d:response/d:propstat/d:prop/'
@@ -141,7 +145,7 @@ module YandexDisk
               :created => xml.elements[prop + 'd:getlastmodified'].text,
               :updated => xml.elements[prop + 'd:getlastmodified'].text,
               :type => type ? type : 'dir',
-              :size => size,
+              :size => size.to_readable(options[:h_size]),
               :is_file => size > 0,
               :public_url => xml.elements[prop + 'public_url'].text}
     end
@@ -158,26 +162,28 @@ module YandexDisk
     #
     # Arguments:
     #   path: path to yandex disk directory (default is <b>root</b>)
-    #   with_root: include information of root directory or not (<b>false</b> for default)
-    def files(path = '', with_root = true)
+    #   root: include information of root directory or not (<b>false</b> for default)
+    #   h_size: return size in human readable format e.g, 100K 128M 1G (false for default)
+    def files(path = '', options = {})
       send_propfind(1, {:path => path})
       xml = REXML::Document.new(@response.body)
       prop = 'd:propstat/d:prop/'
       files = []
       xml.elements.each('d:multistatus/d:response') do |res|
         name = URI.decode(res.elements[prop + 'd:displayname'].text)
-        next if !with_root && path.split('/').last == name
+        next if !options[:root] && path.split('/').last == name
         size = res.elements[prop + 'd:getcontentlength'].text.to_i
 
         files << {:name => name,
                   :path => URI.decode(res.elements['d:href'].text),
                   :created => res.elements[prop + 'd:creationdate'].text,
                   :updated => res.elements[prop + 'd:getlastmodified'].text,
-                  :size => size,
+                  :size => size.to_readable(options[:h_size]),
                   :is_file => size > 0}
       end
       return files
     end
+    alias_method :ls, :files
 
     # Example:
     #   yd.copy('/home/graph.pdf', 'my/work')
@@ -273,6 +279,7 @@ module YandexDisk
       send_request(:propfind, options.merge!(headers))
     end
 
+    # return true if successful
     def send_request(method, args = {})
       # headers
       headers = {'Authorization' => @token}
