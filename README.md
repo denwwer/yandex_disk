@@ -20,7 +20,7 @@ return true if success else raise RequestError
 **example:**
 
     yd.upload('/home/graph.pdf', 'my/work', {:force => true, :chunk_size => 500})
-    # will create "my/work" directory and upload file to "/my/work/graph.pdf" using chunk size 1024 per request
+    # will create "my/work" directory and upload file to "/my/work/graph.pdf" using chunk size 500 per request
 
 #### Download file
 
