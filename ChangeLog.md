@@ -1,6 +1,7 @@
 ## ChangeLog
 ### v1.1.1
 * gem size decrease
+
 ### v1.1.0 (yanked)
 * added ability to return size in human readable format (for default in bytes)
 
