@@ -1,5 +1,7 @@
 ## ChangeLog
-### v1.1.0
+### v1.1.1
+* gem size decrease
+### v1.1.0 (yanked)
 * added ability to return size in human readable format (for default in bytes)
 
  `size`, `properties`, `files` methods now has option `:h_size => true` (humanize size) to return readable format: 15 Byte, 100 KB, 128 MB, 1 GB.
