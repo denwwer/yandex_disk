@@ -2,7 +2,7 @@
 ### v1.1.2
 * fixed Ruby 2.0 file upload error
 * fixed Ruby 2.0 openssl error
-* added default User Agent
+
 ### v1.1.1
 * gem size decrease
 
