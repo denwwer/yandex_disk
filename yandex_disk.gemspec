@@ -12,6 +12,7 @@ Gem::Specification.new do |s|
   s.files                      = Dir.glob("lib/**/*")
   s.test_files                 = Dir.glob('spec/**/*')
   s.require_path               = 'lib'
+  s.required_ruby_version      = '>= 1.9.3'
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'simplecov'
   s.add_development_dependency 'fastimage'

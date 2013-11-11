@@ -1,5 +1,6 @@
 require 'net/http'
 require 'uri'
+require 'openssl'
 require 'zlib'
 require 'base64'
 require 'rexml/document'
@@ -282,7 +283,8 @@ module YandexDisk
     # return true if successful
     def send_request(method, args = {})
       # headers
-      headers = {'Authorization' => @token}
+      headers = {'Authorization' => @token,
+                 'User-Agent' => "Ruby client library v#{YandexDisk::VERSION}"}
       headers.merge!(args[:headers]) if args[:headers]
       uri = URI.parse(YandexDisk::API_URL)
       # path

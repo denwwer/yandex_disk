@@ -8,9 +8,13 @@ module YandexDisk
       end
     end
 
-    def read(foo)
+    def read(a, b = nil)
       if @file
-        @file.read(@size)
+        if b
+          @file.read(@size, b)
+        else
+          @file.read(@size)
+        end
       end
     end
 
