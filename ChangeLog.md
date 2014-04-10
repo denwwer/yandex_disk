@@ -1,8 +1,8 @@
 ## ChangeLog
 
 ### v1.1.3
-* fixed size for .files method
-* .download method return String (response.body) if save path don't present
+* fixed size for \#files method
+* \#download method return String (response.body), if save path don't present
 
         yd.download('/my/work/graph.pdf') # keep file content in memory
         => String
