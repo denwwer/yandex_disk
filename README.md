@@ -1,4 +1,7 @@
 ## Yandex Disk gem
+[![Code Climate](https://codeclimate.com/github/denwwer/yandex_disk.png)](https://codeclimate.com/github/denwwer/yandex_disk)
+[![Code Climate](https://codeclimate.com/github/denwwer/yandex_disk/coverage.png)](https://codeclimate.com/github/denwwer/yandex_disk)
+
 An easy-to-use client library for Yandex Disk API based on Net::HTTP.
 
 Has any issue or suggestion please write about it [here](https://github.com/denwwer/yandex_disk/issues).
@@ -27,11 +30,14 @@ return true if success else raise RequestError
 
     yd.download(file, save_path)
 
-return true if success else raise RequestError
+		if save_path not present - return file content else return true when save file
 
   **example:**
 
     yd.download('/my/work/graph.pdf', '/home') # download file to "/home/graph.pdf"
+    => true
+    yd.download('/my/work/graph.pdf') # keep file content in memory
+    => String
 #### Create path
 
     yd.create_path(path)

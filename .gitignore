@@ -1,4 +1,6 @@
 .idea
 .rvmrc
+.DS_Store
 spec/files/downloads
+spec/files/sample*
 coverage

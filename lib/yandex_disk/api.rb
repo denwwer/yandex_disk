@@ -11,6 +11,7 @@ require 'yandex_disk/chunked'
 
 module YandexDisk
   class RequestError < Exception; end
+  class BadFormat < Exception; end
 
   class Api
 
@@ -24,7 +25,7 @@ module YandexDisk
     #
     # Arguments:
     #   file: path to file
-    #   path: path to yandex disk directory (default is <b>root</b>)
+    #   path: path to yandex disk directory. If path not present - save to root
     #   options:
     #      chunk_size: file chunk size (default is 100)
     #      force: create path structure if not exist (raise <b>RequestError</b> if <b>path</b> not exist for default)
@@ -46,30 +47,33 @@ module YandexDisk
 
     # Example:
     #   yd.download('/home/graph.pdf', '/home')
-    #   => true
+    #   => true (or file content)
     #
     # Arguments:
     #   file: path to yandex disk file
-    #   save_path: path to save
-    def download(file, save_path)
+    #   save_path: path to save. If save_path not present - return file content
+    def download(file, save_path = nil)
       option = {:path => file,
                 :headers => {'TE' => 'chunked',
                              'Accept-Encoding' => 'gzip'}}
 
       send_request(:get, option)
 
-      data = nil
       # unzip if zipped
-      if @response.header['Content-Encoding'] == 'gzip'
+      if gzip?(@response.header['Content-Encoding'])
         s_io = StringIO.new(@response.body)
         gz = Zlib::GzipReader.new(s_io)
         data = gz.read
       else
         data = @response.body
       end
-      File.open(File.join(save_path, file.split('/').last), 'w'){|f| f.write(data)}
 
-      return true
+      if save_path
+        File.open(File.join(save_path, file.split('/').last), 'w'){|f| f.write(data)}
+        return true
+      else
+        return data
+      end
     end
 
     # Example:
@@ -83,7 +87,7 @@ module YandexDisk
       path.split('/').each do |p|
         next if p.empty?
         c_path << p + '/'
-        send_request(:mkcol, {:path => c_path})
+        send_request(:mkcol, :path => c_path)
       end
     end
     alias_method :mkdir, :create_path
@@ -96,7 +100,7 @@ module YandexDisk
     #      readable: return size in human readable format e.g, 100K 128M 1G (false for default)
     def size(options = {})
       body = '<?xml version="1.0" encoding="utf-8"?><D:propfind xmlns:D="DAV:"><D:prop><D:quota-available-bytes/><D:quota-used-bytes/></D:prop></D:propfind>'
-      send_propfind(0, {:body => body})
+      send_propfind(0, :body => body)
       xml = REXML::Document.new(@response.body)
       prop = 'd:multistatus/d:response/d:propstat/d:prop/'
       available_b = xml.elements[prop + 'd:quota-available-bytes'].text.to_i
@@ -114,8 +118,7 @@ module YandexDisk
     #   path: path to yandex disk directory or file
     def exist?(path)
       body = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><displayname/></prop></propfind>'
-      send_propfind(0, {:path => path, :body => body})
-      return true
+      send_propfind(0, :path => path, :body => body)
     rescue RequestError
       return false
     end
@@ -136,7 +139,7 @@ module YandexDisk
     #   h_size: return size in human readable format e.g, 100K 128M 1G (false for default)
     def properties(path, options = {})
       body = '<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><displayname/><creationdate/><getlastmodified/><getcontenttype/><getcontentlength/><public_url xmlns="urn:yandex:disk:meta"/></prop></propfind>'
-      send_propfind(0, {:path => path, :body => body})
+      send_propfind(0, :path => path, :body => body)
       prop = 'd:multistatus/d:response/d:propstat/d:prop/'
       xml = REXML::Document.new(@response.body)
       type = xml.elements[prop + 'd:getcontenttype'].text
@@ -166,14 +169,14 @@ module YandexDisk
     #   root: include information of root directory or not (<b>false</b> for default)
     #   h_size: return size in human readable format e.g, 100K 128M 1G (false for default)
     def files(path = '', options = {})
-      send_propfind(1, {:path => path})
+      send_propfind(1, :path => path)
       xml = REXML::Document.new(@response.body)
       prop = 'd:propstat/d:prop/'
       files = []
       xml.elements.each('d:multistatus/d:response') do |res|
         name = URI.decode(res.elements[prop + 'd:displayname'].text)
         next if !options[:root] && path.split('/').last == name
-        size = res.elements[prop + 'd:getcontentlength'].text.to_i
+        size = res.elements[prop + 'd:getcontentlength'].text.to_i rescue 0
 
         files << {:name => name,
                   :path => URI.decode(res.elements['d:href'].text),
@@ -217,7 +220,7 @@ module YandexDisk
     # Arguments:
     #   path: path to yandex disk directory or file
     def delete(path)
-      send_request(:delete, {:path => path})
+      send_request(:delete, :path => path)
     end
     alias_method :del, :delete
 
@@ -229,7 +232,7 @@ module YandexDisk
     #   path: path to yandex disk directory or file
     def set_public(path)
       body = '<propertyupdate xmlns="DAV:"><set><prop><public_url xmlns="urn:yandex:disk:meta">true</public_url></prop></set></propertyupdate>'
-      send_request(:proppatch, {:path => path, :body => body})
+      send_request(:proppatch, :path => path, :body => body)
       xml = REXML::Document.new(@response.body)
       return xml.elements['d:multistatus/d:response/d:propstat/d:prop/public_url'].text
     end
@@ -242,7 +245,7 @@ module YandexDisk
     #   path: path to yandex disk directory or file
     def set_private(path)
       body = '<propertyupdate xmlns="DAV:"><remove><prop><public_url xmlns="urn:yandex:disk:meta" /></prop></remove></propertyupdate>'
-      send_request(:proppatch, {:path => path, :body => body})
+      send_request(:proppatch, :path => path, :body => body)
       xml = REXML::Document.new(@response.body)
       return xml.elements['d:multistatus/d:response/d:propstat/d:prop/public_url'].text.nil?
     end
@@ -256,12 +259,16 @@ module YandexDisk
     #   size: preview size (for details visit http://api.yandex.com/disk/doc/dg/reference/preview.xml)
     #   save_to: path to save
     def preview(path, size, save_to)
-      send_request(:get, {:path => path, :preview => size.to_s})
+      send_request(:get, :path => path, :preview => size.to_s)
       File.open(File.join(save_to, path.split('/').last), 'w'){|f| f.write(@response.body)}
     end
 
     ########## private ##########
     private
+
+    def gzip?(type)
+      type == 'gzip'
+    end
 
     def create_dest(from, to)
       prop = properties(from)
@@ -269,9 +276,37 @@ module YandexDisk
       return '/' + to
     end
 
+    def request_path(path, preview)
+      if path.blank?
+        return ''
+      else
+        path = URI.encode( path.split('/').reject{|it| it.blank?}.join('/') )
+        raise Exception if path.empty?
+        # image preview
+        path << "?preview&size=#{preview}" if preview
+        return path
+      end
+    rescue Exception
+      raise BadFormat, 'Path has bad format.'
+    end
+
+    def init_request(method)
+      case method
+        when :put then Net::HTTP::Put
+        when :get then Net::HTTP::Get
+        when :mkcol then Net::HTTP::Mkcol
+        when :propfind then Net::HTTP::Propfind
+        when :copy  then Net::HTTP::Copy
+        when :move  then Net::HTTP::Move
+        when :delete then Net::HTTP::Delete
+        when :proppatch then Net::HTTP::Proppatch
+        else raise RequestError, "Method #{method} not supported."
+      end
+    end
+
     def move_copy(method, from, to)
-      send_request(method, {:path => from,
-                            :headers => {'Destination' => create_dest(from, to)}})
+      send_request(method, :path => from,
+                           :headers => {'Destination' => create_dest(from, to)})
     end
 
     def send_propfind(depth, options = {})
@@ -288,18 +323,7 @@ module YandexDisk
       headers.merge!(args[:headers]) if args[:headers]
       uri = URI.parse(YandexDisk::API_URL)
       # path
-      path = ''
-      begin
-        unless args[:path].blank?
-          path = URI.encode( args[:path].split('/').reject{|it| it.blank?}.join('/') )
-          raise Exception if path.empty?
-          # image preview
-          path << "?preview&size=#{args[:preview]}" if args[:preview]
-        end
-      rescue Exception => e
-        raise RequestError, 'Path has bad format.'
-      end
-      request_path = uri.request_uri + path
+      path = uri.request_uri + request_path(args[:path], args[:preview])
       # init
       http = Net::HTTP.new(uri.host, uri.port)
       # ssl
@@ -309,33 +333,13 @@ module YandexDisk
       end
       # debug
       http.set_debug_output($stderr) if YandexDisk::DEBUG
-      # method
-      req = nil
-      case method
-        when :put then
-          req = Net::HTTP::Put.new(request_path, headers)
-          req.body_stream = Chunked.new(@file, args[:chunk_size])
-        when :get then
-          req = Net::HTTP::Get.new(request_path, headers)
-        when :mkcol then
-          req = Net::HTTP::Mkcol.new(request_path, headers)
-        when :propfind then
-          req = Net::HTTP::Propfind.new(request_path, headers)
-        when :copy  then
-          req = Net::HTTP::Copy.new(request_path, headers)
-        when :move  then
-          req = Net::HTTP::Move.new(request_path, headers)
-        when :delete then
-          req = Net::HTTP::Delete.new(request_path, headers)
-        when :proppatch
-          req = Net::HTTP::Proppatch.new(request_path, headers)
-        else
-          raise RequestError, "Method #{method} not supported."
-      end
-      # start
+      # request
+      req = init_request(method).new(path, headers)
+      req.body_stream = Chunked.new(@file, args[:chunk_size]) if method == :put
       req.body = args[:body] if args[:body]
+      # start
       http.start{|h| @response = h.request(req) }
-      successful?(method, request_path)
+      successful?(method, path)
     end
 
     def successful?(method, path)

@@ -11,12 +11,17 @@ describe YandexDisk do
   describe 'validate' do
     it 'authorization' do
       yd = YandexDisk.login('', '')
-      expect{yd.size}.to raise_error YandexDisk::RequestError
+      expect{yd.size}.to raise_error YandexDisk::RequestError, /401 Unauthorized/
     end
 
-    it 'file' do
+    it 'wrong file' do
       yd = YandexDisk.login('', '')
-      expect{yd.upload('not/exist/file')}.to raise_error YandexDisk::RequestError
+      expect{yd.upload('not/exist/file')}.to raise_error YandexDisk::RequestError, /File not found/
+    end
+
+    it 'wrong path' do
+      yd = YandexDisk.login('', '')
+      expect{yd.create_path('/   / / / /f // / ')}.to raise_error YandexDisk::BadFormat, /Path has bad format/
     end
   end
 
@@ -26,12 +31,12 @@ describe YandexDisk do
     end
 
     describe 'size' do
-      it 'should be in bytes' do
+      it 'in bytes' do
         size = @yd.size
         expect(size[:used] > 0 && size[:available] > 0).to be_true
       end
 
-      it 'should be in readable format' do
+      it 'in readable format' do
         size = @yd.size(:h_size => true)
         mask = /Byte|KB|MB|GB/
         expect(size[:used].match(mask)[0].empty? &&
@@ -41,35 +46,37 @@ describe YandexDisk do
 
     it 'should return list of files' do
      @yd.files.each do |item|
-        [:name, :path, :created, :updated, :size, :is_file].each{|res| expect(!item[res].to_s.empty?).to be_true}
+        [:name, :path, :created, :updated, :size, :is_file].each{|res| item[res].to_s.should_not be_empty}
      end
     end
 
-    it 'should return file or dir properties' do
-      # file
-      @yd.upload(@text_file, 'my', {:force => true})
-      properties1 = @yd.properties('my/' + File.basename(@text_file))
-      [:created, :updated, :type, :size, :is_file].each{|res| expect(properties1[res].to_s.empty?).to be_false}
-      properties1[:type].should eq 'text/plain'
-      # dir
-      dir = '/my/photo'
-      @yd.create_path(dir)
-      properties2 = @yd.properties(dir)
-      properties2[:is_file].should be_false
-      clear!
+    describe 'properties' do
+      it 'for file' do
+        @yd.upload(@text_file, 'my', :force => true)
+        properties = @yd.properties('my/' + File.basename(@text_file))
+        [:created, :updated, :type, :size, :is_file].each{|res| properties[res].to_s.should_not be_empty}
+        properties[:type].should eq 'text/plain'
+      end
+
+      it 'for directory' do
+        dir = '/my/photo'
+        @yd.create_path(dir)
+        properties = @yd.properties(dir)
+        properties[:is_file].should be_false
+      end
     end
 
     describe 'directory' do
-      it 'should be created' do
+      it 'create' do
         dir = 'my/photos/cats'
         @yd.create_path(dir).should be_true
         @yd.properties(dir)[:is_file].should be_false
       end
 
-      it 'should be copied' do
+      it 'copy' do
         # create directories with Cyrillic name
-        src = 'my/старые файлы'
-        des = 'my/здесь новые файлы'
+        src = 'файлы/старые'
+        des = 'файлы/здесь новые'
 
         @yd.create_path(src)
         @yd.create_path(des)
@@ -84,31 +91,47 @@ describe YandexDisk do
         @yd.copy(src, des)
         # check files
         @yd.files(src).size.should eq 2
-        files.each do |file, text|
-          download_and_validate(File.join(des, file), text)
-        end
         # clear
         files.each{|file, text| File.delete( File.join(FILES_PATH, file) )}
-      end
-
-      after(:each) do
-        clear!
       end
     end
 
     describe 'file' do
-      it 'should be uploaded' do
-        @yd.upload(@text_file, 'my', {:force => true}).should be_true
+      it 'upload' do
+        @yd.upload(@text_file, 'my', :force => true).should be_true
+        @yd.exist?('my/' + File.basename(@text_file)).should be_true
       end
 
-      it 'should be downloaded and validate' do
-        @yd.upload(@text_file, 'my', {:force => true}).should be_true
-        path = 'my/' + File.basename(@text_file)
-        download_and_validate(path)
+      describe 'download' do
+        it 'save and validate' do
+          @yd.upload(@text_file, 'my', :force => true).should be_true
+          path = 'my/' + File.basename(@text_file)
+          @yd.download(path, DOWNLOAD_PATH).should be_true
+          expect( File.read( File.join(DOWNLOAD_PATH, File.basename(@text_file)) ) ).to eq(FILE_TEXT)
+        end
+
+        it 'return and validate' do
+          @yd.upload(@text_file, 'my', :force => true).should be_true
+          path = 'my/' + File.basename(@text_file)
+          YandexDisk::Api.any_instance.stub(:response).and_return('xxx')
+          @yd.download(path).should eq FILE_TEXT
+        end
+
+        it 'unzip file' do
+          file = @text_file.gsub('.txt', '.gz')
+          Zlib::GzipWriter.open(file) do |gz|
+            gz.write File.read(@text_file)
+          end
+
+          @yd.upload(file, 'my', :force => true).should be_true
+          path = 'my/' + File.basename(file)
+          @yd.should_receive(:gzip?){ true }
+          @yd.download(path).should eq FILE_TEXT
+        end
       end
-      # its related to copy dir
-      it 'should by copied' do
-        @yd.upload(@text_file, 'my', {:force => true})
+
+      it 'copy' do
+        @yd.upload(@text_file, 'my', :force => true)
         f_name = File.basename(@text_file)
         file = 'my/' + f_name
         new_path = 'my/text'
@@ -116,11 +139,10 @@ describe YandexDisk do
         @yd.copy(file, new_path).should be_true
         # file still exist in src path
         @yd.exist?(file).should be_true
-        download_and_validate(File.join(new_path, f_name))
       end
 
-      it 'should by moved' do
-        @yd.upload(@text_file, 'my', {:force => true})
+      it 'move' do
+        @yd.upload(@text_file, 'my', :force => true)
         f_name = File.basename(@text_file)
         file = 'my/' + f_name
         new_path = 'my/text'
@@ -128,26 +150,23 @@ describe YandexDisk do
         @yd.move(file, new_path).should be_true
         # file not exist in src path
         @yd.exist?(file).should be_false
-        download_and_validate(File.join(new_path, f_name))
       end
 
-      it 'should by deleted' do
-        # upload file
+      it 'delete' do
         @yd.upload(@text_file)
         f_name = File.basename(@text_file)
-        download_and_validate(f_name)
         @yd.delete(f_name).should be_true
         @yd.exist?(f_name).should be_false
       end
 
-      it 'should be public'do
-        @yd.upload(@image_file, 'my', {:force => true})
+      it 'set public'do
+        @yd.upload(@image_file, 'my', :force => true)
         # mask: http://yadi.sk/d/#############
         expect(@yd.set_public('my/' + File.basename(@image_file)) =~ /http:\/\/yadi\.sk\/d\/.+/).to be_true
       end
 
-      it 'should be private'do
-        @yd.upload(@text_file, 'my', {:force => true})
+      it 'set private'do
+        @yd.upload(@text_file, 'my', :force => true)
         f_name = 'my/' + File.basename(@text_file)
         # mask: http://yadi.sk/d/#############
         expect(@yd.set_public(f_name) =~ /http:\/\/yadi\.sk\/d\/.+/).to be_true
@@ -156,7 +175,7 @@ describe YandexDisk do
 
       describe 'preview' do
         before(:each)do
-          @yd.upload(@image_file, 'my', {:force => true}).should be_true
+          @yd.upload(@image_file, 'my', :force => true).should be_true
           @f_name = File.basename(@image_file)
         end
 
@@ -175,18 +194,10 @@ describe YandexDisk do
           FastImage.size( File.join(DOWNLOAD_PATH, @f_name) )[0].should eq 128
         end
       end
-
-      after(:each) do
-        clear!
-      end
     end
 
+    it 'should catch wrong method' do
+      expect { @yd.send :init_request, :none }.to raise_error YandexDisk::RequestError, /Method none not supported/
+    end
   end
-
-  def download_and_validate(download_file, text = FILE_TEXT)
-    @yd.download(download_file, DOWNLOAD_PATH).should be_true
-    file = download_file.split('/').last
-    expect( File.read( File.join(DOWNLOAD_PATH, file) ) ).to eq(text)
-  end
-
 end
