@@ -2,7 +2,7 @@
 [![Code Climate](https://codeclimate.com/github/denwwer/yandex_disk.png?t=1)](https://codeclimate.com/github/denwwer/yandex_disk)
 [![Code Coverage](https://codeclimate.com/github/denwwer/yandex_disk/coverage.png)](https://codeclimate.com/github/denwwer/yandex_disk)
 
-An easy-to-use client library for Yandex Disk API based on Net::HTTP.
+An easy-to-use pure Ruby client library for Yandex Disk API based on Net::HTTP. No any runtime dependencies required.
 
 Has any issue or suggestion please write about it [here](https://github.com/denwwer/yandex_disk/issues).
 ## Usage
