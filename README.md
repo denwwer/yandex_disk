@@ -1,6 +1,7 @@
 ## Yandex Disk gem
 [![Code Climate](https://codeclimate.com/github/denwwer/yandex_disk.png?t=1)](https://codeclimate.com/github/denwwer/yandex_disk)
 [![Code Coverage](https://codeclimate.com/github/denwwer/yandex_disk/coverage.png)](https://codeclimate.com/github/denwwer/yandex_disk)
+[![security](https://hakiri.io/github/denwwer/yandex_disk/master.svg)](https://hakiri.io/github/denwwer/yandex_disk/master)
 
 An easy-to-use pure Ruby client library for Yandex Disk API based on Net::HTTP. No any runtime dependencies required.
 
