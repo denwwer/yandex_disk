@@ -9,12 +9,18 @@ Has any issue or suggestion please write about it [here](https://github.com/denw
 ## Usage
 Include to project and login
 
+    # require directly
     require 'yandex_disk'
+    
+    # or with builder
+    gem 'yandex_disk'
+    
+    # login
     yd = YandexDisk.login(login, pwd)
 #### Upload file
 
     yd.upload(file, path, options)
-return true if success else raise RequestError
+return `true` if success else raise `RequestError`
 
 **options:**
 
@@ -22,23 +28,24 @@ return true if success else raise RequestError
 
 `:force` create path if not exist, default raise error
 
-**example:**
+   **example:**
 
-    yd.upload('/home/graph.pdf', 'my/work', {:force => true, :chunk_size => 500})
-    # will create "my/work" directory and upload file to "/my/work/graph.pdf" using chunk size 500 per request
+    # create "my/work" directory and upload file to "/my/work/graph.pdf" using chunk size 500 per request
+    yd.upload('/home/graph.pdf', 'my/work', { :force => true, :chunk_size => 500 }
 
 #### Download file
 
     yd.download(file, save_path)
 
-		if save_path not present - return file content else return true when save file
+if `save_path` not present - return file content else return true when save file
 
-  **example:**
-
-    yd.download('/my/work/graph.pdf', '/home') # download file to "/home/graph.pdf"
-    => true
-    yd.download('/my/work/graph.pdf') # keep file content in memory
-    => String
+**example:**
+  
+    # download file to "/home/graph.pdf"
+    yd.download('/my/work/graph.pdf', '/home') #=> true
+    
+    # keep file content in memory
+    yd.download('/my/work/graph.pdf') #=> String
 #### Create path
 
     yd.create_path(path)
@@ -49,7 +56,8 @@ return true if success else raise RequestError
 
   **example:**
 
-    yd.mkdir('/my/work') # create "/my/work" path
+    # create "/my/work" path
+    yd.mkdir('/my/work')
 #### Get available and used space
 
     yd.size(options)
@@ -58,29 +66,24 @@ return true if success else raise RequestError
 
   `:h_size` return size in human readable format (for default return in bytes) 15 Byte, 100 KB, etc
 
-return Hash `{:available, :used }` if success else raise RequestError
-
   **example:**
 
-    s = yd.size
-    p s[:available], s[:used] # => 213133, 321
-    ####
-    s = yd.size(:h_size => true)
-    p s[:available], s[:used] # => '7.8 GB', '200 MB'
+    yd.size # => { :available => 213133, :used => 321 }
+    yd.size(:h_size => true) #=> { :available =>  '7.8 GB', :used => '200 MB' }
 #### File exist?
 
-    yd.exist?(file)
+    yd.exist?(file) 
 
 return true if file exist else false
 
   **example:**
 
-    p yd.exist?('/home/graph.pdf') # => true
+    yd.exist?('/home/graph.pdf') # => true
 #### Get file properties
 
     yd.properties(file, options)
 
-return Hash `{:name, :created, :updated, :type, :size, :is_file, :public_url}` if success else raise RequestError
+return Hash `{ :name, :created, :updated, :type, :size, :is_file, :public_url }` if success else raise RequestError
 
  **options:**
 
@@ -89,13 +92,13 @@ return Hash `{:name, :created, :updated, :type, :size, :is_file, :public_url}` i
   **example:**
 
     prop = yd.properties('/home/graph.pdf', {:h_size => true})
-    p prop[:is_file] # => true
-    p prop[:size] # => 25 MB
+    prop[:is_file] # => true
+    prop[:size] # => 25 MB
 #### Return list of files properties in directory
 
     yd.files(path, options)
 
-  return Array with Hash `[{:name, :created, :updated, :type, :size, :is_file}]` if success else raise RequestError
+  return Array with Hash `[{ :name, :created, :updated, :type, :size, :is_file }]` if success else raise RequestError
 
  **options:**
 
@@ -108,10 +111,10 @@ return Hash `{:name, :created, :updated, :type, :size, :is_file, :public_url}` i
   **example:**
 
     files = yd.files('/home')
-    p files[0][:name] # => graph.pdf
+    files[0][:name] # => graph.pdf
     ### with root
-    files = yd.properties('/home', {:root => true})
-    p files[0][:name] # => home
+    files = yd.properties('/home', { :root => true })
+    files[0][:name] # => home
 #### Copy file or directory
 
     yd.copy(from, to)
@@ -172,13 +175,13 @@ save image if successful else raise RequestError
 
     T-shirt size (like in Yandex.Fotki), such as size=M. Yandex.Disk returns a preview in the size you selected:
     XXXS — 50 pixels on each side (square).
-    XXS — 75 pixels on each side (square).
-    XS — 100 pixels on each side (square).
-    S — 150 pixels wide, preserves original aspect ratio.
-    M — 300 pixels wide, preserves original aspect ratio.
-    L — 500 pixels wide, preserves original aspect ratio.
-    XL — 800 pixels wide, preserves original aspect ratio.
-    XXL — 1024 pixels wide, preserves original aspect ratio.
+    XXS  — 75 pixels on each side (square).
+    XS   — 100 pixels on each side (square).
+    S    — 150 pixels wide, preserves original aspect ratio.
+    M    — 300 pixels wide, preserves original aspect ratio.
+    L    — 500 pixels wide, preserves original aspect ratio.
+    XL   — 800 pixels wide, preserves original aspect ratio.
+    XXL  — 1024 pixels wide, preserves original aspect ratio.
     XXXL — 1280 pixels wide, preserves original aspect ratio.
 
     A number, such as size=128.
