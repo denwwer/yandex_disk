@@ -12,7 +12,7 @@ Include to project and login
     # require directly
     require 'yandex_disk'
     
-    # or with builder
+    # or in Gemfile
     gem 'yandex_disk'
     
     # login
