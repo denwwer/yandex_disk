@@ -20,15 +20,16 @@ Include to project and login
 #### Upload file
 
     yd.upload(file, path, options)
-return `true` if success else raise `RequestError`
+return true if success else raise RequestError
 
 **options:**
 
-`:chunk_size` file chunk size, default is 1024
+* `:chunk_size` file chunk size, default is 1024
 
-`:force` create path if not exist, default raise error
+* `:force` create path if not exist, default raise error
 
-   **example:**
+
+**example:**
 
     # create "my/work" directory and upload file to "/my/work/graph.pdf" using chunk size 500 per request
     yd.upload('/home/graph.pdf', 'my/work', { :force => true, :chunk_size => 500 }
@@ -64,7 +65,7 @@ return true if success else raise RequestError
 
   **options:**
 
-  `:h_size` return size in human readable format (for default return in bytes) 15 Byte, 100 KB, etc
+  * `:h_size` return size in human readable format (for default return in bytes) 15 Byte, 100 KB, etc
 
   **example:**
 
@@ -87,7 +88,7 @@ return Hash `{ :name, :created, :updated, :type, :size, :is_file, :public_url }`
 
  **options:**
 
-   `:h_size` return size in human readable format (for default return in bytes) 15 Byte, 100 KB, etc
+   * `:h_size` return size in human readable format (for default return in bytes) 15 Byte, 100 KB, etc
 
   **example:**
 
@@ -102,19 +103,20 @@ return Hash `{ :name, :created, :updated, :type, :size, :is_file, :public_url }`
 
  **options:**
 
-   `:h_size` return size in human readable format (for default return in bytes) 15 Byte, 100 KB, etc
+   * `:h_size` return size in human readable format (for default return in bytes) 15 Byte, 100 KB, etc
 
-   `:root` include properties for root directory ("home" in example)
+   * `:root` include properties for root directory ("home" in example)
 
   **alias:** `ls`
 
   **example:**
 
     files = yd.files('/home')
-    files[0][:name] # => graph.pdf
-    ### with root
+    files[0][:name] #=> graph.pdf
+    
+    # with root
     files = yd.properties('/home', { :root => true })
-    files[0][:name] # => home
+    files[0][:name] #=> 'home'
 #### Copy file or directory
 
     yd.copy(from, to)
@@ -156,7 +158,7 @@ return public url if successful else raise RequestError
 
   **example:**
 
-    yd.set_public('/home/graph.pdf') # => http://yadi.sk/d/#############
+    yd.set_public('/home/graph.pdf') #=> http://yadi.sk/d/#############
 #### Set private file or directory
 
     yd.set_private(path)
@@ -165,7 +167,7 @@ return true if successful else false
 
   **example:**
 
-    yd.set_private('/home/graph.pdf') # => true
+    yd.set_private('/home/graph.pdf') #=> true
 #### Get image preview
 
     preview(path, size, save_to)
@@ -197,5 +199,8 @@ save image if successful else raise RequestError
 
   **example:**
 
-    yd.preview('/photo/car.jpg', 'm', '/home') # save "car.jpg" with 300 pixels wide to home directory
-    yd.preview('/photo/car.jpg', 128, '/home') # save preview 128 pixels wide to home directory
+    # save "car.jpg" with 300 pixels wide to home directory
+    yd.preview('/photo/car.jpg', 'm', '/home') 
+  
+    # save preview 128 pixels wide to home directory
+    yd.preview('/photo/car.jpg', 128, '/home') 
