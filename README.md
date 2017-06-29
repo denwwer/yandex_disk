@@ -32,7 +32,7 @@ return true if success else raise RequestError
 **example:**
 
     # create "my/work" directory and upload file to "/my/work/graph.pdf" using chunk size 500 per request
-    yd.upload('/home/graph.pdf', 'my/work', { :force => true, :chunk_size => 500 }
+    yd.upload('/home/graph.pdf', 'my/work', { :force => true, :chunk_size => 500 })
 
 #### Download file
 
@@ -79,7 +79,7 @@ return true if file exist else false
 
   **example:**
 
-    yd.exist?('/home/graph.pdf') # => true
+    yd.exist?('/home/graph.pdf') #=> true
 #### Get file properties
 
     yd.properties(file, options)
@@ -92,9 +92,9 @@ return Hash `{ :name, :created, :updated, :type, :size, :is_file, :public_url }`
 
   **example:**
 
-    prop = yd.properties('/home/graph.pdf', {:h_size => true})
-    prop[:is_file] # => true
-    prop[:size] # => 25 MB
+    prop = yd.properties('/home/graph.pdf', { :h_size => true })
+    prop[:is_file] #=> true
+    prop[:size] #=> 25 MB
 #### Return list of files properties in directory
 
     yd.files(path, options)
@@ -198,9 +198,6 @@ save image if successful else raise RequestError
 *View the original [api page](http://api.yandex.com/disk/doc/dg/reference/preview.xml) for details.*
 
   **example:**
-
-    # save "car.jpg" with 300 pixels wide to home directory
-    yd.preview('/photo/car.jpg', 'm', '/home') 
-  
-    # save preview 128 pixels wide to home directory
-    yd.preview('/photo/car.jpg', 128, '/home') 
+    
+    yd.preview('/photo/car.jpg', 'm', '/home') # save "car.jpg" with 300 pixels wide to home directory
+    yd.preview('/photo/car.jpg', 128, '/home') # save preview 128 pixels wide to home directory
