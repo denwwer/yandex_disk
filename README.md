@@ -1,4 +1,5 @@
 ## Yandex Disk gem
+[![Gem](https://img.shields.io/gem/dt/yandex_disk.svg)]()
 [![Code Climate](https://codeclimate.com/github/denwwer/yandex_disk.png?t=1)](https://codeclimate.com/github/denwwer/yandex_disk)
 [![Code Coverage](https://codeclimate.com/github/denwwer/yandex_disk/coverage.png)](https://codeclimate.com/github/denwwer/yandex_disk)
 [![security](https://hakiri.io/github/denwwer/yandex_disk/master.svg)](https://hakiri.io/github/denwwer/yandex_disk/master)
